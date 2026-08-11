@@ -17,9 +17,13 @@ def main():
         use_tls=SMTP_USE_TLS,
     )
 
-    mailer.test_connection()
+    mailer.send(
+        recipient=SMTP_USERNAME,
+        subject="Mail Sender Test",
+        body="Hello! This email was sent from Mail Sender.",
+    )
 
-    print("SMTP authentication successful.")
+    print("Email sent successfully.")
 
 
 if __name__ == "__main__":
