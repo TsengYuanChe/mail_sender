@@ -21,6 +21,9 @@ def main():
         recipient=SMTP_USERNAME,
         subject="Mail Sender Test",
         body="Hello! This email was sent from Mail Sender.",
+        attachments=[
+            "samples/attachments/sample.pdf",
+        ],
     )
 
     print("Email sent successfully.")
