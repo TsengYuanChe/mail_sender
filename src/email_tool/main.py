@@ -6,7 +6,9 @@ from .config import (
     SMTP_USE_TLS,
 )
 from .mailer import SMTPMailer
-from .template import load_template, render_template
+from .recipients import load_recipients
+from .template import load_template
+from .sender import send_bulk
 
 
 def main():
@@ -17,18 +19,24 @@ def main():
         password=SMTP_PASSWORD,
         use_tls=SMTP_USE_TLS,
     )
-    
-    html = load_template("samples/template.html")
-    html = render_template(html, "Adam")
 
-    mailer.send(
-        recipient=SMTP_USERNAME,
-        subject="HTML Test",
-        body="Hi Adam,\n\nThis is a test email.",
-        html_body=html,
+    recipients = load_recipients(
+        "samples/recipients.csv"
     )
 
-    print("Email sent successfully.")
+    template = load_template(
+        "samples/template.html"
+    )
+
+    send_bulk(
+        mailer=mailer,
+        recipients=recipients,
+        template=template,
+        subject="Bulk Email Test",
+        body_template="Hi {{ name }},\n\nThis is a test email.",
+    )
+
+    print("Emails sent successfully.")
 
 
 if __name__ == "__main__":
