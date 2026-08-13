@@ -34,6 +34,7 @@ class SMTPMailer:
         recipient: str,
         subject: str,
         body: str,
+        html_body: str | None = None,
         attachments: list[str] | None = None,
     ) -> None:
         message = EmailMessage()
@@ -43,6 +44,9 @@ class SMTPMailer:
         message["Subject"] = subject
 
         message.set_content(body)
+        
+        if html_body:
+            message.add_alternative(html_body, subtype="html")
         
         if attachments:
             for attachment in attachments:

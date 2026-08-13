@@ -139,3 +139,32 @@ def test_send_with_multiple_attachments(mocker, mailer, tmp_path):
     attachments = list(sent_message.iter_attachments())
 
     assert len(attachments) == 2
+    
+def test_send_with_html(mocker, mailer):
+    mock_smtp = mocker.patch("email_tool.mailer.smtplib.SMTP")
+    mock_connection = mock_smtp.return_value.__enter__.return_value
+
+    mailer.send(
+        recipient="recipient@example.com",
+        subject="HTML Test",
+        body="Hi Adam,\n\nThis is a test email.",
+        html_body="<p>Hi Adam,</p><p>This is a test email.</p>",
+    )
+
+    mock_connection.send_message.assert_called_once()
+
+    sent_message = mock_connection.send_message.call_args.args[0]
+
+    assert sent_message.is_multipart()
+
+    plain_part = sent_message.get_body(preferencelist=("plain",))
+    html_part = sent_message.get_body(preferencelist=("html",))
+
+    assert plain_part is not None
+    assert html_part is not None
+
+    assert plain_part.get_content().strip() == "Hi Adam,\n\nThis is a test email."
+    assert html_part.get_content().strip() == (
+        "<p>Hi Adam,</p><p>This is a test email.</p>"
+    )
+    assert html_part.get_content_type() == "text/html"

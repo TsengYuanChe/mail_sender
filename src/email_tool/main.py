@@ -6,6 +6,7 @@ from .config import (
     SMTP_USE_TLS,
 )
 from .mailer import SMTPMailer
+from .template import load_template, render_template
 
 
 def main():
@@ -16,14 +17,15 @@ def main():
         password=SMTP_PASSWORD,
         use_tls=SMTP_USE_TLS,
     )
+    
+    html = load_template("samples/template.html")
+    html = render_template(html, "Adam")
 
     mailer.send(
         recipient=SMTP_USERNAME,
-        subject="Mail Sender Test",
-        body="Hello! This email was sent from Mail Sender.",
-        attachments=[
-            "samples/attachments/sample.pdf",
-        ],
+        subject="HTML Test",
+        body="Hi Adam,\n\nThis is a test email.",
+        html_body=html,
     )
 
     print("Email sent successfully.")
