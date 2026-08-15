@@ -9,24 +9,37 @@ def send_bulk(
     body_template: str,
     attachments: list[str] | None = None,
 ) -> None:
+    result = {
+        "success": [],
+        "failed": [],
+    }
+    
     for recipient in recipients:
         name = recipient["name"]
         email = recipient["email"]
 
-        html_body = render_template(
-            template,
-            name,
-        )
+        html_body = render_template(template, name)
+        body = body_template.replace( "{{ name }}",name)
 
-        body = body_template.replace(
-            "{{ name }}",
-            name,
-        )
-
-        mailer.send(
-            recipient=email,
-            subject=subject,
-            body=body,
-            html_body=html_body,
-            attachments=attachments,
-        )
+        try: 
+            mailer.send(
+                recipient=email,
+                subject=subject,
+                body=body,
+                html_body=html_body,
+                attachments=attachments,
+            )
+            
+            result["success"].append({
+                "name": name,
+                "email": email,
+            })
+        
+        except Exception as e:
+            result["failed"].append({
+                "name": name,
+                "email": email,
+                "error": str(e),
+            })
+    
+    return result

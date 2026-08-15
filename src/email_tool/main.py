@@ -28,7 +28,7 @@ def main():
         "samples/template.html"
     )
 
-    send_bulk(
+    result = send_bulk(
         mailer=mailer,
         recipients=recipients,
         template=template,
@@ -36,7 +36,8 @@ def main():
         body_template="Hi {{ name }},\n\nThis is a test email.",
     )
 
-    print("Emails sent successfully.")
+    print(f"Success: {len(result['success'])}")
+    print(f"Failed: {len(result['failed'])}")
 
 
 if __name__ == "__main__":
