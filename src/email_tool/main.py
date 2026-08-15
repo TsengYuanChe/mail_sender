@@ -9,6 +9,7 @@ from .mailer import SMTPMailer
 from .recipients import load_recipients
 from .template import load_template
 from .sender import send_bulk
+from .validation import validate_recipients
 
 
 def main():
@@ -27,10 +28,18 @@ def main():
     template = load_template(
         "samples/template.html"
     )
+    
+    valid_recipients, invalid_recipients = validate_recipients(
+        recipients
+    )
+    
+    print(f"Recipients: {len(recipients)}")
+    print(f"Valid: {len(valid_recipients)}")
+    print(f"Invalid: {len(invalid_recipients)}")
 
     result = send_bulk(
         mailer=mailer,
-        recipients=recipients,
+        recipients=valid_recipients,
         template=template,
         subject="Bulk Email Test",
         body_template="Hi {{ name }},\n\nThis is a test email.",
