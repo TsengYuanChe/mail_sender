@@ -56,7 +56,7 @@ class ResultWindow(QWidget):
             name = recipient["name"]
 
             label = QLabel(
-                f"⏳ Sending to {name}..."
+                f"⏸ {name} — Waiting"
             )
 
             self.recipient_labels[email] = label
@@ -118,3 +118,15 @@ class ResultWindow(QWidget):
         self.failed_label.setText(
             f"Failed: {self.failed_count}"
         )
+        
+    def mark_sending(
+        self,
+        name: str,
+        email: str,
+    ):
+        label = self.recipient_labels.get(email)
+
+        if label:
+            label.setText(
+                f"⏳ Sending to {name}..."
+            )

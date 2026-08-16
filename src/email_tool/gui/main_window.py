@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QFileDialog,
 )
+from PySide6.QtCore import QThread
 
 from email_tool.recipients import load_recipients
 from email_tool.template import (
@@ -14,10 +15,20 @@ from email_tool.template import (
     render_template,
 )
 from email_tool.validation import validate_recipients
+from email_tool.config import (
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USERNAME,
+    SMTP_PASSWORD,
+    SMTP_USE_TLS,
+)
+from email_tool.mailer import SMTPMailer
+from email_tool.template import load_template
 
 from .preview_window import PreviewWindow
 from .attachment_tag import AttachmentTag
 from .result_window import ResultWindow
+from .send_worker import SendWorker
 
 
 class MainWindow(QWidget):
@@ -199,12 +210,21 @@ class MainWindow(QWidget):
         if not self.template_path:
             return
 
+        subject = self.subject_input.text().strip()
+
+        if not subject:
+            return
+
         recipients = load_recipients(
             self.csv_path
         )
 
         valid_recipients, invalid_recipients = (
             validate_recipients(recipients)
+        )
+
+        template = load_template(
+            self.template_path
         )
 
         self.result_window = ResultWindow(
@@ -214,3 +234,56 @@ class MainWindow(QWidget):
         )
 
         self.result_window.show()
+
+        mailer = SMTPMailer(
+            host=SMTP_HOST,
+            port=SMTP_PORT,
+            username=SMTP_USERNAME,
+            password=SMTP_PASSWORD,
+            use_tls=SMTP_USE_TLS,
+        )
+
+        self.send_thread = QThread()
+
+        self.send_worker = SendWorker(
+            mailer=mailer,
+            recipients=valid_recipients,
+            template=template,
+            subject=subject,
+            body_template="Hi {{ name }},\n\nThis is a test email.",
+            attachments=self.attachments,
+        )
+
+        self.send_worker.moveToThread(
+            self.send_thread
+        )
+
+        self.send_thread.started.connect(
+            self.send_worker.run
+        )
+        
+        self.send_worker.sending.connect(
+            self.result_window.mark_sending
+        )
+
+        self.send_worker.success.connect(
+            self.result_window.mark_success
+        )
+
+        self.send_worker.failed.connect(
+            self.result_window.mark_failed
+        )
+
+        self.send_worker.finished.connect(
+            self.send_thread.quit
+        )
+
+        self.send_worker.finished.connect(
+            self.send_worker.deleteLater
+        )
+
+        self.send_thread.finished.connect(
+            self.send_thread.deleteLater
+        )
+
+        self.send_thread.start()
