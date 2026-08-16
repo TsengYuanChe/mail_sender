@@ -59,3 +59,59 @@ def test_send_bulk_continues_when_one_email_fails():
 
     assert result["failed"][0]["email"] == "amy@example.com"
     assert result["failed"][0]["error"] == "Send failed"
+    
+def test_send_bulk_callbacks():
+    mailer = Mock()
+
+    on_sending = Mock()
+    on_success = Mock()
+    on_failed = Mock()
+
+    recipients = [
+        {
+            "name": "Adam",
+            "email": "adam@example.com",
+        },
+        {
+            "name": "Amy",
+            "email": "amy@example.com",
+        },
+    ]
+
+    mailer.send.side_effect = [
+        None,
+        Exception("Send failed"),
+    ]
+
+    send_bulk(
+        mailer=mailer,
+        recipients=recipients,
+        template="<p>Hi {{ name }}</p>",
+        subject="Test",
+        body_template="Hi {{ name }}",
+        on_sending=on_sending,
+        on_success=on_success,
+        on_failed=on_failed,
+    )
+
+    assert on_sending.call_count == 2
+
+    on_sending.assert_any_call(
+        "Adam",
+        "adam@example.com",
+    )
+    on_sending.assert_any_call(
+        "Amy",
+        "amy@example.com",
+    )
+
+    on_success.assert_called_once_with(
+        "Adam",
+        "adam@example.com",
+    )
+
+    on_failed.assert_called_once_with(
+        "Amy",
+        "amy@example.com",
+        "Send failed",
+    )

@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from .template import render_template
 
 
@@ -8,6 +10,9 @@ def send_bulk(
     subject: str,
     body_template: str,
     attachments: list[str] | None = None,
+    on_sending: Callable[[str, str], None] | None = None,
+    on_success: Callable[[str, str], None] | None = None,
+    on_failed: Callable[[str, str, str], None] | None = None,
 ) -> None:
     result = {
         "success": [],
@@ -17,6 +22,9 @@ def send_bulk(
     for recipient in recipients:
         name = recipient["name"]
         email = recipient["email"]
+        
+        if on_sending:
+            on_sending(name, email)
 
         html_body = render_template(template, name)
         body = body_template.replace( "{{ name }}",name)
@@ -34,12 +42,20 @@ def send_bulk(
                 "name": name,
                 "email": email,
             })
+            
+            if on_success:
+                on_success(name, email)
         
         except Exception as e:
+            error = str(e)
+            
             result["failed"].append({
                 "name": name,
                 "email": email,
-                "error": str(e),
+                "error": error,
             })
+            
+            if on_failed:
+                on_failed(name, email, error)
     
     return result
