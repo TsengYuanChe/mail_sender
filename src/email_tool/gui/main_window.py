@@ -14,18 +14,10 @@ from email_tool.template import (
     render_template,
 )
 from email_tool.validation import validate_recipients
-from email_tool.config import (
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USERNAME,
-    SMTP_PASSWORD,
-    SMTP_USE_TLS,
-)
-from email_tool.mailer import SMTPMailer
-from email_tool.sender import send_bulk
 
 from .preview_window import PreviewWindow
 from .attachment_tag import AttachmentTag
+from .result_window import ResultWindow
 
 
 class MainWindow(QWidget):
@@ -207,37 +199,18 @@ class MainWindow(QWidget):
         if not self.template_path:
             return
 
-        subject = self.subject_input.text().strip()
-
-        if not subject:
-            return
-
-        recipients = load_recipients(self.csv_path)
+        recipients = load_recipients(
+            self.csv_path
+        )
 
         valid_recipients, invalid_recipients = (
             validate_recipients(recipients)
         )
 
-        template = load_template(self.template_path)
-
-        mailer = SMTPMailer(
-            host=SMTP_HOST,
-            port=SMTP_PORT,
-            username=SMTP_USERNAME,
-            password=SMTP_PASSWORD,
-            use_tls=SMTP_USE_TLS,
+        self.result_window = ResultWindow(
+            total=len(recipients),
+            valid_recipients=valid_recipients,
+            invalid_recipients=invalid_recipients,
         )
 
-        result = send_bulk(
-            mailer=mailer,
-            recipients=valid_recipients,
-            template=template,
-            subject=subject,
-            body_template="Hi {{ name }},\n\nThis is a test email.",
-            attachments=self.attachments,
-        )
-
-        print(f"Valid: {len(valid_recipients)}")
-        print(f"Invalid: {len(invalid_recipients)}")
-        print(f"Success: {len(result['success'])}")
-        print(f"Failed: {len(result['failed'])}")
+        self.result_window.show()

@@ -2,3 +2,10 @@ name,email
 Adam,adam880614@gmail.com
 Amy,adam880501@gmail.com
 John,adam880614.sc10@nycu.edu.com
+MissingEmail,
+InvalidEmail,abc
+MissingAtSymbol,adam.example.com
+MissingDomain,adam@
+MissingUsername,@gmail.com
+HasSpace,adam test@gmail.com
+,emptyname@gmail.com
