@@ -1,3 +1,7 @@
+from pathlib import Path
+
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -15,6 +19,7 @@ class PreviewWindow(QWidget):
         invalid: int,
         subject: str,
         html_body: str,
+        attachments: list[str],
     ):
         super().__init__()
 
@@ -32,6 +37,8 @@ class PreviewWindow(QWidget):
         self.subject_label = QLabel(
             f"Subject: {subject}"
         )
+        
+        self.attachments = attachments
 
         self.preview_content = QTextEdit()
         self.preview_content.setReadOnly(True)
@@ -43,6 +50,35 @@ class PreviewWindow(QWidget):
         layout.addWidget(self.summary_label)
         layout.addWidget(self.subject_label)
         layout.addWidget(self.preview_content)
+        
+        attachments_label = QLabel(
+            f"Attachments ({len(self.attachments)})"
+        )
+
+        layout.addWidget(attachments_label)
+
+        for attachment in self.attachments:
+            path = Path(attachment)
+
+            button = QPushButton(path.name)
+
+            button.clicked.connect(
+                lambda checked=False, file_path=attachment:
+                    self.open_attachment(file_path)
+            )
+
+            layout.addWidget(button)
+        
         layout.addWidget(self.close_button)
 
         self.setLayout(layout)
+        
+    def open_attachment(self, path: str):
+        file_path = Path(path)
+
+        if not file_path.exists():
+            return
+        
+        QDesktopServices.openUrl(
+            QUrl.fromLocalFile(path)
+        )

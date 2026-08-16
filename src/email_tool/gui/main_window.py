@@ -139,6 +139,7 @@ class MainWindow(QWidget):
             invalid=len(invalid_recipients),
             subject=subject,
             html_body=html_body,
+            attachments=self.attachments,
         )
 
         self.preview_window.show()
