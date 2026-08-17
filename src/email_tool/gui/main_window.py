@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -6,8 +8,9 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QFileDialog,
+    QGroupBox,
 )
-from PySide6.QtCore import QThread
+from PySide6.QtCore import QThread, Qt
 
 from email_tool.recipients import load_recipients
 from email_tool.template import (
@@ -41,55 +44,157 @@ class MainWindow(QWidget):
         self.attachments = []
 
         self.setWindowTitle("Mail Sender")
-
-        layout = QVBoxLayout()
-
-        self.csv_label = QLabel("No recipient file selected")
-        self.csv_button = QPushButton("Select Recipients CSV")
-
-        self.template_label = QLabel("No template selected")
-        self.template_button = QPushButton("Select Template")
+        self.resize(720, 520)
         
+        self.setStyleSheet("""
+            QGroupBox::title {
+                font-size: 18px;
+                font-weight: bold;
+            }
+        """)
+
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(24, 24, 24, 24)
+        main_layout.setSpacing(16)
+        
+        # =========================
+        # Recipients
+        # =========================
+        recipients_group = QGroupBox("Recipients")
+        recipients_layout = QHBoxLayout()
+        
+        self.csv_input = QLineEdit()
+        self.csv_input.setPlaceholderText("No CSV selected")
+        self.csv_input.setReadOnly(True)
+
+        self.csv_button = QPushButton("Select CSV")
+
+        recipients_layout.addWidget(self.csv_input, 1)
+        recipients_layout.addWidget(self.csv_button)
+
+        recipients_group.setLayout(recipients_layout)
+        
+        # =========================
+        # Template
+        # =========================
+        template_group = QGroupBox("Template")
+        template_layout = QHBoxLayout()
+
+        self.template_input = QLineEdit()
+        self.template_input.setPlaceholderText("No template selected")
+        self.template_input.setReadOnly(True)
+
+        self.template_button = QPushButton("Select Template")
+
+        template_layout.addWidget(self.template_input, 1)
+        template_layout.addWidget(self.template_button)
+
+        template_group.setLayout(template_layout)
+
+        # =========================
+        # Attachments
+        # =========================
+        attachments_group = QGroupBox("Attachments")
+        attachments_group_layout = QVBoxLayout()
+
+        attachment_controls = QHBoxLayout()
+
         self.attachment_input = QLineEdit()
         self.attachment_input.setPlaceholderText("No attachment selected")
         self.attachment_input.setReadOnly(True)
-        
+
         self.attachment_select_button = QPushButton("Select File")
-        self.attachment_add_button = QPushButton("Add Attachment")
+        self.attachment_add_button = QPushButton("Add")
+
+        attachment_controls.addWidget(
+            self.attachment_input,
+            1,
+        )
+        attachment_controls.addWidget(
+            self.attachment_select_button
+        )
+        attachment_controls.addWidget(
+            self.attachment_add_button
+        )
+
+        self.attachments_layout = QHBoxLayout()
+        self.attachments_layout.setAlignment(
+            Qt.AlignmentFlag.AlignLeft
+        )
+        self.attachments_layout.setSpacing(6)
+
+        attachments_group_layout.addLayout(
+            attachment_controls
+        )
+        attachments_group_layout.addLayout(
+            self.attachments_layout
+        )
+
+        attachments_group.setLayout(
+            attachments_group_layout
+        )
+
+        # =========================
+        # Email
+        # =========================
+        email_group = QGroupBox("Email")
+        email_layout = QVBoxLayout()
+
+        subject_label = QLabel("Subject")
 
         self.subject_input = QLineEdit()
-        self.subject_input.setPlaceholderText("Email subject")
+        self.subject_input.setPlaceholderText(
+            "Enter email subject"
+        )
+
+        email_layout.addWidget(subject_label)
+        email_layout.addWidget(self.subject_input)
+
+        email_group.setLayout(email_layout)
+        
+        # =========================
+        # Actions
+        # =========================
+        action_layout = QHBoxLayout()
+        action_layout.addStretch()
 
         self.preview_button = QPushButton("Preview")
         self.send_button = QPushButton("Send Emails")
-        
-        attachment_controls = QHBoxLayout()
 
-        attachment_controls.addWidget(self.attachment_input)
-        attachment_controls.addWidget(self.attachment_select_button)
-        attachment_controls.addWidget(self.attachment_add_button)
-        
-        self.attachments_layout = QVBoxLayout()
+        self.preview_button.setMinimumWidth(120)
+        self.send_button.setMinimumWidth(160)
 
-        layout.addWidget(self.csv_label)
-        layout.addWidget(self.csv_button)
-        layout.addWidget(self.template_label)
-        layout.addWidget(self.template_button)
-        layout.addWidget(QLabel("Attachments"))
-        layout.addLayout(attachment_controls)
-        layout.addLayout(self.attachments_layout)
-        layout.addWidget(self.subject_input)
-        layout.addWidget(self.preview_button)
-        layout.addWidget(self.send_button)
+        action_layout.addWidget(self.preview_button)
+        action_layout.addWidget(self.send_button)
 
-        self.setLayout(layout)
+        # =========================
+        # Main layout
+        # =========================
+        main_layout.addWidget(recipients_group)
+        main_layout.addWidget(template_group)
+        main_layout.addWidget(attachments_group)
+        main_layout.addWidget(email_group)
+        main_layout.addLayout(action_layout)
 
+        self.setLayout(main_layout)
+
+        # Events
         self.csv_button.clicked.connect(self.select_csv)
-        self.template_button.clicked.connect(self.select_template)
+        self.template_button.clicked.connect(
+            self.select_template
+        )
         self.preview_button.clicked.connect(self.preview)
-        self.attachment_select_button.clicked.connect(self.select_attachment)
-        self.attachment_add_button.clicked.connect(self.add_attachment)
-        self.send_button.clicked.connect(self.send_emails)
+
+        self.attachment_select_button.clicked.connect(
+            self.select_attachment
+        )
+        self.attachment_add_button.clicked.connect(
+            self.add_attachment
+        )
+
+        self.send_button.clicked.connect(
+            self.send_emails
+        )
 
     def select_csv(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -101,7 +206,11 @@ class MainWindow(QWidget):
 
         if path:
             self.csv_path = path
-            self.csv_label.setText(path)
+            self.csv_input.setText(
+                Path(path).name
+            )
+
+            self.csv_input.setToolTip(path)
 
     def select_template(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -113,7 +222,11 @@ class MainWindow(QWidget):
 
         if path:
             self.template_path = path
-            self.template_label.setText(path)
+            self.template_input.setText(
+                Path(path).name
+            )
+            
+            self.template_input.setToolTip(path)
             
     def preview(self):
         if not self.csv_path:
@@ -167,7 +280,11 @@ class MainWindow(QWidget):
 
         if path:
             self.selected_attachment_path = path
-            self.attachment_input.setText(path)
+            self.attachment_input.setText(
+                Path(path).name
+            )
+            
+            self.attachment_input.setToolTip(path)
             
     def add_attachment(self):
         if not self.selected_attachment_path:
