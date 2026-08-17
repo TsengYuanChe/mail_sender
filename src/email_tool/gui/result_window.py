@@ -1,8 +1,11 @@
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel,
     QPushButton,
+    QGroupBox,
+    QScrollArea,
 )
 
 
@@ -16,22 +19,24 @@ class ResultWindow(QWidget):
         super().__init__()
 
         self.setWindowTitle("Send Result")
-        self.resize(500, 500)
+        self.resize(650, 550)
 
+        self.total = total
+        self.valid_count = len(valid_recipients)
+        self.invalid_count = len(invalid_recipients)
         self.success_count = 0
         self.failed_count = 0
+        self.recipient_labels = {}
 
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(24, 24, 24, 24)
+        main_layout.setSpacing(16)
 
-        self.total_label = QLabel(
-            f"Total: {total}"
+        # Invalid
+        invalid_group = QGroupBox(
+            f"Invalid ({len(invalid_recipients)})"
         )
-        layout.addWidget(self.total_label)
-
-        self.invalid_label = QLabel(
-            f"Invalid: {len(invalid_recipients)}"
-        )
-        layout.addWidget(self.invalid_label)
+        invalid_layout = QVBoxLayout()
 
         for item in invalid_recipients:
             recipient = item["recipient"]
@@ -40,16 +45,19 @@ class ResultWindow(QWidget):
             name = recipient.get("name", "")
             reason = ", ".join(errors)
 
-            layout.addWidget(
-                QLabel(f"{name} — {reason}")
+            invalid_layout.addWidget(
+                QLabel(
+                    f"{name or '(No name)'} — {reason}"
+                )
             )
 
-        self.valid_label = QLabel(
-            f"Valid: {len(valid_recipients)}"
-        )
-        layout.addWidget(self.valid_label)
+        invalid_group.setLayout(invalid_layout)
 
-        self.recipient_labels = {}
+        # Valid
+        valid_group = QGroupBox(
+            f"Valid ({len(valid_recipients)})"
+        )
+        valid_layout = QVBoxLayout()
 
         for recipient in valid_recipients:
             email = recipient["email"]
@@ -60,29 +68,59 @@ class ResultWindow(QWidget):
             )
 
             self.recipient_labels[email] = label
+            valid_layout.addWidget(label)
 
-            layout.addWidget(label)
+        valid_group.setLayout(valid_layout)
 
-        self.success_label = QLabel(
-            "Success: 0"
+        # Scroll area
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout()
+
+        scroll_layout.addWidget(invalid_group)
+        scroll_layout.addWidget(valid_group)
+        scroll_layout.addStretch()
+
+        scroll_content.setLayout(scroll_layout)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(scroll_content)
+
+        # Bottom summary
+        bottom_layout = QHBoxLayout()
+
+        self.summary_label = QLabel(
+            f"Total: {self.total} | "
+            f"Invalid: {self.invalid_count} | "
+            f"To Send: {self.valid_count} | "
+            f"Success: 0 | "
+            f"Failed: 0"
         )
-
-        self.failed_label = QLabel(
-            "Failed: 0"
-        )
-
-        layout.addWidget(self.success_label)
-        layout.addWidget(self.failed_label)
 
         self.close_button = QPushButton("Close")
+        self.close_button.setMinimumWidth(120)
         self.close_button.clicked.connect(
             self.close
         )
 
-        layout.addWidget(self.close_button)
+        bottom_layout.addWidget(self.summary_label)
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(self.close_button)
 
-        self.setLayout(layout)
-        
+        main_layout.addWidget(scroll_area, 1)
+        main_layout.addLayout(bottom_layout)
+
+        self.setLayout(main_layout)
+
+    def update_summary(self):
+        self.summary_label.setText(
+            f"Total: {self.total} | "
+            f"Invalid: {self.invalid_count} | "
+            f"To Send: {self.valid_count} | "
+            f"Success: {self.success_count} | "
+            f"Failed: {self.failed_count}"
+        )
+
     def mark_success(
         self,
         name: str,
@@ -96,10 +134,7 @@ class ResultWindow(QWidget):
             )
 
         self.success_count += 1
-        self.success_label.setText(
-            f"Success: {self.success_count}"
-        )
-
+        self.update_summary()
 
     def mark_failed(
         self,
@@ -115,10 +150,8 @@ class ResultWindow(QWidget):
             )
 
         self.failed_count += 1
-        self.failed_label.setText(
-            f"Failed: {self.failed_count}"
-        )
-        
+        self.update_summary()
+
     def mark_sending(
         self,
         name: str,
