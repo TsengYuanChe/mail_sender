@@ -18,14 +18,6 @@ from email_tool.template import (
     render_template,
 )
 from email_tool.validation import validate_recipients
-from email_tool.config import (
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USERNAME,
-    SMTP_PASSWORD,
-    SMTP_USE_TLS,
-)
-from email_tool.mailer import SMTPMailer
 from email_tool.template import load_template
 
 from .preview_window import PreviewWindow
@@ -35,9 +27,10 @@ from .send_worker import SendWorker
 
 
 class MainWindow(QWidget):
-    def __init__(self):
+    def __init__(self, mailer):
         super().__init__()
         
+        self.mailer = mailer
         self.csv_path = None
         self.template_path = None
         self.selected_attachment_path = None
@@ -352,18 +345,10 @@ class MainWindow(QWidget):
 
         self.result_window.show()
 
-        mailer = SMTPMailer(
-            host=SMTP_HOST,
-            port=SMTP_PORT,
-            username=SMTP_USERNAME,
-            password=SMTP_PASSWORD,
-            use_tls=SMTP_USE_TLS,
-        )
-
         self.send_thread = QThread()
 
         self.send_worker = SendWorker(
-            mailer=mailer,
+            mailer=self.mailer,
             recipients=valid_recipients,
             template=template,
             subject=subject,
