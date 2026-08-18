@@ -2,7 +2,12 @@ import smtplib
 
 import pytest
 
-from email_tool.login import login
+from email_tool.login import (
+    login,
+    save_credential,
+    get_credential,
+    delete_credential,
+)
 
 
 def test_login(mocker):
@@ -56,3 +61,51 @@ def test_login_failed(mocker):
             password="wrong-password",
             use_tls=True,
         )
+        
+def test_save_credential(mocker):
+    mock_set_password = mocker.patch(
+        "email_tool.login.keyring.set_password"
+    )
+
+    save_credential(
+        "adam@example.com",
+        "password123",
+    )
+
+    mock_set_password.assert_called_once_with(
+        "mail-sender",
+        "adam@example.com",
+        "password123",
+    )
+
+
+def test_get_credential(mocker):
+    mock_get_password = mocker.patch(
+        "email_tool.login.keyring.get_password",
+        return_value="password123",
+    )
+
+    result = get_credential(
+        "adam@example.com"
+    )
+
+    mock_get_password.assert_called_once_with(
+        "mail-sender",
+        "adam@example.com",
+    )
+
+    assert result == "password123"
+    
+def test_delete_credential(mocker):
+    mock_delete_password = mocker.patch(
+        "email_tool.login.keyring.delete_password"
+    )
+
+    delete_credential(
+        "adam@example.com"
+    )
+
+    mock_delete_password.assert_called_once_with(
+        "mail-sender",
+        "adam@example.com",
+    )
