@@ -149,7 +149,10 @@ class MainWindow(QWidget):
         # Actions
         # =========================
         action_layout = QHBoxLayout()
-        action_layout.addStretch()
+        
+        self.account_label = QLabel(
+            f"Signed in as  {self.mailer.username}"
+        )
 
         self.preview_button = QPushButton("Preview")
         self.send_button = QPushButton("Send Emails")
@@ -157,6 +160,8 @@ class MainWindow(QWidget):
         self.preview_button.setMinimumWidth(120)
         self.send_button.setMinimumWidth(160)
 
+        action_layout.addWidget(self.account_label)
+        action_layout.addStretch()
         action_layout.addWidget(self.preview_button)
         action_layout.addWidget(self.send_button)
 
