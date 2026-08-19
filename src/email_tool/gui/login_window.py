@@ -1,3 +1,5 @@
+import sys
+
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QWidget,
@@ -9,16 +11,19 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QGroupBox,
     QMessageBox,
+    QHBoxLayout
 )
 
 from email_tool.accounts import (
     list_accounts,
     add_account,
+    remove_account,
 )
 from email_tool.login import (
     login,
     get_credential,
     save_credential,
+    delete_credential,
 )
 
 
@@ -53,11 +58,20 @@ class LoginWindow(QWidget):
         self.saved_login_button = QPushButton(
             "Login with Saved Account"
         )
+        
+        self.remove_account_button = QPushButton(
+            "Remove"
+        )
+        
+        account_row = QHBoxLayout()
 
-        saved_layout.addWidget(self.account_combo)
+        account_row.addWidget(self.account_combo, 1)
+        account_row.addWidget(self.remove_account_button)
+
+        saved_layout.addLayout(account_row)
         saved_layout.addWidget(self.saved_login_button)
-
-        saved_group.setLayout(saved_layout)
+        
+        saved_group.setLayout(saved_layout) 
 
         # New account
         new_group = QGroupBox("New Account")
@@ -84,6 +98,15 @@ class LoginWindow(QWidget):
         self.remember_checkbox = QCheckBox(
             "Remember account"
         )
+        
+        is_frozen = getattr(sys, "frozen", False)
+        
+        if sys.platform == "darwin" and is_frozen:
+            self.remember_checkbox.setChecked(False)
+            self.remember_checkbox.setEnabled(False)
+            self.remember_checkbox.setToolTip(
+                "Remember account is unavailable in this macOS build."
+            )
 
         new_layout.addWidget(self.remember_checkbox)
 
@@ -99,6 +122,10 @@ class LoginWindow(QWidget):
         self.setLayout(main_layout)
 
         self.load_accounts()
+        
+        self.remove_account_button.clicked.connect(
+            self.remove_saved_account
+        )
 
         self.saved_login_button.clicked.connect(
             self.login_saved_account
@@ -118,9 +145,8 @@ class LoginWindow(QWidget):
         has_accounts = bool(accounts)
 
         self.account_combo.setEnabled(has_accounts)
-        self.saved_login_button.setEnabled(
-            has_accounts
-        )
+        self.saved_login_button.setEnabled(has_accounts)
+        self.remove_account_button.setEnabled(has_accounts)
         
     def login_new_account(self):
         username = self.username_input.text().strip()
@@ -152,12 +178,21 @@ class LoginWindow(QWidget):
             return
 
         if self.remember_checkbox.isChecked():
-            save_credential(
-                username,
-                password,
-            )
+            try:
+                save_credential(
+                    username,
+                    password,
+                )
 
-            add_account(username)
+                add_account(username)
+            
+            except Exception as exc:
+                QMessageBox.critical(
+                    self,
+                    "Save Credential Failed",
+                    str(exc),
+                )
+                return
 
         self.password_input.clear()
         self.login_success.emit(mailer)
@@ -197,3 +232,29 @@ class LoginWindow(QWidget):
 
         self.password_input.clear()
         self.login_success.emit(mailer)
+        
+    def remove_saved_account(self):
+        username = self.account_combo.currentText()
+
+        if not username:
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Remove Account",
+            f"Remove saved account {username}?",
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No,
+        )
+
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            delete_credential(username)
+        except Exception:
+            pass
+
+        remove_account(username)
+
+        self.load_accounts()
