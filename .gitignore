@@ -219,3 +219,4 @@ __marimo__/
 
 samples/attachments/*
 !samples/attachments/.gitkeep
+Mail-Sender-*.zip
