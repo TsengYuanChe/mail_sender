@@ -149,7 +149,6 @@ The following variable is currently supported in HTML email templates:
 
 - Python
 - PySide6
-- Jinja2
 - keyring
 - pytest
 - PyInstaller
