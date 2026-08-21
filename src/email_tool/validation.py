@@ -5,7 +5,6 @@ EMAIL_PATTERN = re.compile(
     r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
 )
 
-
 def is_valid_email(email: str) -> bool:
     if not email:
         return False
@@ -20,11 +19,7 @@ def validate_recipient(
 ) -> list[str]:
     errors = []
 
-    name = recipient.get("name", "").strip()
     email = recipient.get("email", "").strip()
-
-    if not name:
-        errors.append("missing name")
 
     if not email:
         errors.append("missing email")
@@ -54,3 +49,10 @@ def validate_recipients(
             valid.append(recipient)
 
     return valid, invalid
+
+def validate_template_variables(
+    template_variables: set[str],
+    csv_fields: set[str],
+) -> list[str]:
+    missing = template_variables - csv_fields
+    return sorted(missing)

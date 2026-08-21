@@ -13,9 +13,6 @@ def load_recipients(path: str) -> list[dict[str, str]]:
         reader = csv.DictReader(file)
 
         for row in reader:
-            recipients.append({
-                "name": row["name"],
-                "email": row["email"],
-            })
+            recipients.append(dict(row))
 
     return recipients

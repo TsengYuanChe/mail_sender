@@ -10,24 +10,50 @@ def test_send_bulk():
         {
             "name": "Adam",
             "email": "adam@example.com",
+            "company": "OpenAI",
         },
         {
             "name": "Amy",
             "email": "amy@example.com",
+            "company": "Example Inc",
         },
     ]
 
-    template = "<p>Hi {{ name }},</p>"
+    template = (
+        "<p>Hi {{ name }},</p>"
+        "<p>Company: {{ company }}</p>"
+    )
 
     send_bulk(
         mailer=mailer,
         recipients=recipients,
         template=template,
         subject="Test Email",
-        body_template="Hi {{ name }},",
+        body_template="Hi {{ name }} from {{ company }}",
     )
 
     assert mailer.send.call_count == 2
+
+    first_call = mailer.send.call_args_list[0]
+    second_call = mailer.send.call_args_list[1]
+
+    assert first_call.kwargs["recipient"] == "adam@example.com"
+    assert first_call.kwargs["html_body"] == (
+        "<p>Hi Adam,</p>"
+        "<p>Company: OpenAI</p>"
+    )
+    assert first_call.kwargs["body"] == (
+        "Hi Adam from OpenAI"
+    )
+
+    assert second_call.kwargs["recipient"] == "amy@example.com"
+    assert second_call.kwargs["html_body"] == (
+        "<p>Hi Amy,</p>"
+        "<p>Company: Example Inc</p>"
+    )
+    assert second_call.kwargs["body"] == (
+        "Hi Amy from Example Inc"
+    )
     
 def test_send_bulk_continues_when_one_email_fails():
     mailer = Mock()
@@ -115,3 +141,29 @@ def test_send_bulk_callbacks():
         "amy@example.com",
         "Send failed",
     )
+    
+def test_send_bulk_without_name():
+    mailer = Mock()
+
+    recipients = [
+        {
+            "email": "adam@example.com",
+            "company": "OpenAI",
+        },
+    ]
+
+    send_bulk(
+        mailer=mailer,
+        recipients=recipients,
+        template="<p>{{ company }}</p>",
+        subject="Test",
+        body_template="{{ company }}",
+    )
+
+    mailer.send.assert_called_once()
+
+    sent_call = mailer.send.call_args
+
+    assert sent_call.kwargs["recipient"] == "adam@example.com"
+    assert sent_call.kwargs["html_body"] == "<p>OpenAI</p>"
+    

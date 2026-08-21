@@ -1,5 +1,9 @@
-from email_tool.validation import is_valid_email, validate_recipient, validate_recipients
-
+from email_tool.validation import (
+    is_valid_email,
+    validate_recipient,
+    validate_recipients,
+    validate_template_variables,
+)
 
 def test_valid_email():
     assert is_valid_email(
@@ -28,6 +32,16 @@ def test_valid_recipient():
 
     assert result == []
     
+
+def test_valid_recipient_without_name():
+    result = validate_recipient({
+        "email": "adam@example.com",
+        "company": "OpenAI",
+    })
+
+    assert result == []
+
+
 def test_validate_recipients():
     recipients = [
         {
@@ -65,3 +79,54 @@ def test_validate_recipients():
         "email": "abc",
     }
     assert invalid[1]["errors"] == ["invalid email"]
+    
+
+def test_template_variables_are_valid():
+    result = validate_template_variables(
+        template_variables={
+            "name",
+            "company",
+        },
+        csv_fields={
+            "email",
+            "name",
+            "company",
+        },
+    )
+
+    assert result == []
+    
+    
+def test_unused_csv_fields_are_allowed():
+    result = validate_template_variables(
+        template_variables={
+            "name",
+        },
+        csv_fields={
+            "email",
+            "name",
+            "company",
+            "position",
+        },
+    )
+
+    assert result == []
+    
+    
+def test_missing_template_variables():
+    result = validate_template_variables(
+        template_variables={
+            "name",
+            "company",
+            "position",
+        },
+        csv_fields={
+            "email",
+            "name",
+        },
+    )
+
+    assert result == [
+        "company",
+        "position",
+    ]

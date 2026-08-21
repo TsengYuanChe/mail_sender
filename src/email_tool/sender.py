@@ -20,14 +20,14 @@ def send_bulk(
     }
     
     for recipient in recipients:
-        name = recipient["name"]
         email = recipient["email"]
+        name = recipient.get("name", email)
         
         if on_sending:
             on_sending(name, email)
 
-        html_body = render_template(template, name)
-        body = body_template.replace( "{{ name }}",name)
+        html_body = render_template(template, recipient)
+        body = render_template(body_template, recipient)
 
         try: 
             mailer.send(
